@@ -1,7 +1,6 @@
 import torch
 import os
 import io
-import ast
 import numpy as np
 from PIL import Image
 from typing import List
