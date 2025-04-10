@@ -4,7 +4,7 @@ import io
 import numpy as np
 from PIL import Image
 from typing import List
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Request
 from pydantic import BaseModel
 from enum import Enum
 from torchvision import transforms
@@ -40,9 +40,12 @@ def predict(preprocessed_image, model):
     return output
 
 # Receives and actual image an convert it into tensor
-async def preprocess(file: UploadFile = File(...)):  
-    contents = await file.read()
-
+async def preprocess(request: Request, file: UploadFile = File(None)):  
+    if file: # If using multipart/form-data
+        contents = await file.read()
+    else: # If raw bytes (application/x-image from SageMaker)    
+        contents = await request.body()
+        
     try:
         image = Image.open(io.BytesIO(contents)).convert("RGB")
     except:
@@ -65,7 +68,7 @@ def pint():
     return "pong"
 
 @app.post('/invocations')
-async def invoke(file: UploadFile = File(...)):
-    image = await preprocess(file)
+async def invoke(file: UploadFile = File(None), request: Request = None):
+    image = await preprocess(request, file)
     output = predict(image, model)
     return output
